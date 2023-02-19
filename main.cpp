@@ -1,3 +1,4 @@
+#include "lexer.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
@@ -12,6 +13,7 @@
 #include "llvm/Target/TargetOptions.h"
 #include <algorithm>
 #include <memory>
+#include <stack>
 #include <utility>
 using namespace llvm;
 
@@ -42,18 +44,38 @@ static void InitializeModule() {
   // Create a new builder for the module.
   Builder = std::make_unique<IRBuilder<>>(*TheContext);
 }
+
+Value *ParseAddSub(std::unique_ptr<std::vector<Token>> const &toks, int &cur) {
+  Value *LHS;
+  if ((*toks)[cur].kind == TK_NUM) {
+    LHS = Builder->getInt32((*toks)[cur].val);
+    ++cur;
+  }
+  if ((*toks)[cur].kind == TK_PUNCT) {
+    if ((*toks)[cur].s == "+") {
+      return Builder->CreateAdd(LHS, ParseAddSub(toks, ++cur));
+    } else if ((*toks)[cur].s == "-") {
+      return Builder->CreateSub(LHS, ParseAddSub(toks, ++cur));
+    }
+  }
+  return LHS;
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
     return 1;
   }
   char *p = argv[1];
+  auto toks = tokenize(p);
   InitializeModule();
+
+  // create main
   Function *main = Function::Create(
       FunctionType::get(Type::getInt32Ty(*TheContext), false),
       Function::ExternalLinkage, Twine("main"), TheModule.get());
   Builder->SetInsertPoint(BasicBlock::Create(*TheContext, "", main));
-  Builder->SetInsertPoint(BasicBlock::Create(*TheContext, "second", main));
-  Builder->CreateRet(Builder->getInt32(atoi(argv[1])));
+  int cur = 0;
+  Builder->CreateRet(ParseAddSub(toks, cur));
   TheModule->print(outs(), nullptr);
 }
