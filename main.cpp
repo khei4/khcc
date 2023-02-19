@@ -6,8 +6,12 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include <memory>
+#include <utility>
 using namespace llvm;
 
 static std::unique_ptr<LLVMContext> TheContext;
@@ -19,10 +23,22 @@ static void InitializeModule() {
   TheContext = std::make_unique<LLVMContext>();
   TheModule = std::make_unique<Module>("top", *TheContext);
 
-  // to execute on M2
-  TheModule->setDataLayout(StringRef("e-m:o-i64:64-i128:128-n32:64-S128"));
-  TheModule->setTargetTriple(StringRef("arm64-apple-macosx13.0.0"));
-  TheModule->setSDKVersion(VersionTuple(13, 1));
+  auto TargetTriple = sys::getDefaultTargetTriple();
+  TheModule->setTargetTriple(TargetTriple);
+  auto CPU = "generic";
+  auto Features = "";
+  std::string Error;
+
+  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+  if (!Target) {
+    errs() << Error;
+    exit(1);
+  }
+  TargetOptions opt;
+  auto RM = Optional<Reloc::Model>();
+  auto TargetMachine =
+      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+  TheModule->setDataLayout(TargetMachine->createDataLayout());
 
   // Create a new builder for the module.
   Builder = std::make_unique<IRBuilder<>>(*TheContext);
