@@ -4,7 +4,7 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/homebrew/Cellar/llvm/15.0.7_1/include",
+                "/opt/homebrew/Cellar/llvm/15.0.7_1/include"
             ],
             "defines": [],
             "macFrameworkPath": [
@@ -12,7 +12,7 @@
             ],
             "compilerPath": "/opt/homebrew/opt/llvm/bin/clang++",
             "cStandard": "c17",
-            "cppStandard": "c++17",
+            "cppStandard": "c++14",
             "intelliSenseMode": "macos-clang-arm64",
             "configurationProvider": "ms-vscode.makefile-tools"
         }
