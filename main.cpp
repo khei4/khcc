@@ -6,10 +6,15 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include <algorithm>
 #include <memory>
 #include <utility>
 using namespace llvm;
@@ -23,6 +28,12 @@ static void InitializeModule() {
   TheContext = std::make_unique<LLVMContext>();
   TheModule = std::make_unique<Module>("top", *TheContext);
 
+  // Initialize the target registry etc.
+  InitializeAllTargetInfos();
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmParsers();
+  InitializeAllAsmPrinters();
   auto TargetTriple = sys::getDefaultTargetTriple();
   TheModule->setTargetTriple(TargetTriple);
   auto CPU = "generic";
